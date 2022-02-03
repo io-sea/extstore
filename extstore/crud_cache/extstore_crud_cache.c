@@ -66,6 +66,7 @@ struct objstore_ops objstore_lib_ops;
 #define LEN_CMD (MAXPATHLEN+2*MAXNAMLEN)
 
 static char store_root[MAXPATHLEN];
+static char grh_url[MAXPATHLEN];
 
 static struct collection_item *conf = NULL;
 struct kvsal_ops kvsal;
@@ -319,6 +320,13 @@ int extstore_init(struct collection_item *cfg_items,
 		strncpy(store_root, get_string_config_value(item, NULL),
 			MAXPATHLEN);
 
+	RC_WRAP(get_config_item, "crud_cache", "grh_url", cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+	else
+		strncpy(grh_url, get_string_config_value(item, NULL),
+			MAXPATHLEN);
+
 	/* Try to load the objstore_lib */
 	rc = load_objstore_lib(cfg_items, kvsalops, "objstore_lib", "objstore");
 
@@ -335,7 +343,7 @@ int extstore_del(extstore_id_t *eid)
 		return -EINVAL;
 
 	/* Delete in the object store */
-	RC_WRAP(objstore_lib_ops.del, eid);
+	RC_WRAP(objstore_lib_ops.del, eid, grh_url);
 
 	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc) {
@@ -563,8 +571,8 @@ int extstore_getattr(extstore_id_t *eid,
 
 int extstore_archive(extstore_id_t *eid)
 {
-	enum state state;
 	char storepath[MAXPATHLEN];
+	enum state state;
 	int rc;
 
 	if (!eid)
@@ -582,8 +590,7 @@ int extstore_archive(extstore_id_t *eid)
 	case CACHED:
 		/* Xfer wuth the object store */
 		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
-
-		RC_WRAP(objstore_lib_ops.put, storepath, eid);
+		RC_WRAP(objstore_lib_ops.put, storepath, eid, grh_url);
 		RC_WRAP(set_entry_state, eid, DUPLICATED);
 		rc = 0;
 		break;
@@ -597,8 +604,8 @@ int extstore_archive(extstore_id_t *eid)
 
 int extstore_restore(extstore_id_t *eid)
 {
-	enum state state;
 	char storepath[MAXPATHLEN];
+	enum state state;
 	int rc = 0;
 
 	if (!eid)
@@ -614,7 +621,7 @@ int extstore_restore(extstore_id_t *eid)
 	case RELEASED:
 		/* Xfer with the object store */
 		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
-		RC_WRAP(objstore_lib_ops.get, storepath, eid);
+		RC_WRAP(objstore_lib_ops.get, storepath, eid, grh_url);
 		RC_WRAP(set_entry_state, eid, DUPLICATED);
 		rc = 0;
 		break;

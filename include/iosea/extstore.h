@@ -163,37 +163,59 @@ int objstore_init(struct collection_item *cfg_items,
  *
  * @param [IN] path: path of a POSIX file to be copied to the object store
  * @param [IN] eid: extstore ID for the object
+ * @param [IN] grh_url: URL of the GRH to send the request to
  *
  * @return: 0 on success, negative value on error.
  */
-int objstore_put(char *path, extstore_id_t *eid);
+int objstore_put(char *path, extstore_id_t *eid, char *grh_url);
 
 /**
  * objstore_get: gets a file from the object store
  *
  * @param [IN] path: path of a POSIX file to be read from the object store
  * @param [IN] eid: extstore ID for the object
+ * @param [IN] grh_url: URL of the GRH to send the request to
  *
  * @return: 0 on success, negative value on error.
  */
-int objstore_get(char *path, extstore_id_t *eid);
+int objstore_get(char *path, extstore_id_t *eid, char *grh_url);
 
 /**
  * objstore_del: deletes an entry in the object store
  *
  * @param [IN] eid: extstore ID for the object
+ * @param [IN] grh_url: URL of the GRH to send the request to
  *
  * @return: 0 on success, negative value on error.
  */
-int objstore_del(extstore_id_t *eid);
+int objstore_del(extstore_id_t *eid, char *grh_url);
 
 struct objstore_ops {
 	int (*init)(struct collection_item *cfg_items,
 		    struct kvsal_ops *kvsalops,
 		    build_extstore_path_func *bespf);
-	int (*put)(char *path, extstore_id_t *eid);
-	int (*get)(char *path, extstore_id_t *eid);
-	int (*del)(extstore_id_t *eid);
+	int (*put)(char *path, extstore_id_t *eid, char *grh_url);
+	int (*get)(char *path, extstore_id_t *eid, char *grh_url);
+	int (*del)(extstore_id_t *eid, char *grh_url);
 };
+
+/* Ganesha Request Handler communication */
+enum grh_request_type {
+	GRH_PUT = 0,
+	GRH_GET = 1,
+	GRH_DELETE = 2,
+
+	GRH_FIRST = GRH_PUT,
+	GRH_LAST = GRH_DELETE,
+};
+
+int handle_request(char *grh_url, const char **paths,
+		   const char **backends, enum grh_request_type *types,
+		   int *errors, size_t n_paths);
+
+int handle_request_wait(char *grh_url, const char **paths,
+			const char **backends, enum grh_request_type *types,
+			int *errors, size_t n_paths,
+			const struct timeval *timeout);
 
 #endif

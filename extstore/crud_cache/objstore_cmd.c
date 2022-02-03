@@ -32,6 +32,7 @@
 #include <sys/time.h>   /* for gettimeofday */
 #include <iosea/extstore.h>
 
+#include "extstore_crud_cache_comm.h"
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
@@ -60,10 +61,12 @@ build_extstore_path_func *build_extstore_path;
 #define PUT_STR ".archive"
 #define PUT_STR_SIZE sizeof(PUT_STR)
 
-int objstore_put(char *path, extstore_id_t *eid)
+int objstore_put(char *path, extstore_id_t *eid, char *grh_url)
 {
 	char storepath[MAXPATHLEN - PUT_STR_SIZE];
+	enum grh_request_type type = GRH_PUT;
 	char objpath[MAXPATHLEN];
+	char *backend = "empty";
 	char cmd[3*MAXPATHLEN];
 	char k[KLEN];
 	FILE *fp;
@@ -82,15 +85,25 @@ int objstore_put(char *path, extstore_id_t *eid)
 	snprintf(k, KLEN, "%s.data_obj", eid->data);
 	RC_WRAP(kvsal.set_char, k, objpath);
 
+	if (grh_url != NULL) {
+		char *storepath_adr = storepath;
+		struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
+		handle_request_wait(grh_url, (const char **)&storepath_adr,
+				    (const char **)&backend, &type, NULL, 1,
+				    &timeout);
+	}
+
 	return 0;
 }
 
-int objstore_get(char *path, extstore_id_t *eid)
+int objstore_get(char *path, extstore_id_t *eid, char *grh_url)
 {
-	char k[KLEN];
+	enum grh_request_type type = GRH_GET;
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
+	char *backend = "empty";
 	char cmd[3*MAXPATHLEN];
+	char k[KLEN];
 	FILE *fp;
 
 	if (!eid)
@@ -104,15 +117,25 @@ int objstore_get(char *path, extstore_id_t *eid)
 	fp = popen(cmd, "r");
 	pclose(fp);
 
+	if (grh_url != NULL) {
+		char *storepath_adr = storepath;
+		struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
+		handle_request_wait(grh_url, (const char **)&storepath_adr,
+				    (const char **)&backend, &type, NULL, 1,
+				    &timeout);
+	}
+
 	return 0;
 }
 
-int objstore_del(extstore_id_t *eid)
+int objstore_del(extstore_id_t *eid, char *grh_url)
 {
-	char k[KLEN];
+	enum grh_request_type type = GRH_DELETE;
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
+	char *backend = "empty";
 	char cmd[3*MAXPATHLEN];
+	char k[KLEN];
 	FILE *fp;
 
 	if (!eid)
@@ -128,6 +151,14 @@ int objstore_del(extstore_id_t *eid)
 		fp = popen(cmd, "r");
 		pclose(fp);
 
+	}
+
+	if (grh_url != NULL) {
+		char *storepath_adr = storepath;
+		struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
+		handle_request_wait(grh_url, (const char **)&storepath_adr,
+				    (const char **)&backend, &type, NULL, 1,
+				    &timeout);
 	}
 
 	return 0;
