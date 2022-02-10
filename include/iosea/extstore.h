@@ -43,7 +43,7 @@
 #include <ini_config.h>
 #include <iosea/kvsal.h>
 
-#define DATALEN 256 
+#define DATALEN 256
 
 typedef struct extstore_id {
 	unsigned int len;
@@ -77,7 +77,7 @@ int extstore_attach(extstore_id_t *eid);
 int extstore_getattr(extstore_id_t *eid,
 		     struct stat *stat);
 
-//struct extstore_id eid_null = { .len = 0, .data = NULL}; 
+//struct extstore_id eid_null = { .len = 0, .data = NULL};
 
 /* Pseudo HSM */
 int extstore_archive(extstore_id_t *eid);
@@ -142,11 +142,49 @@ typedef int build_extstore_path_func(extstore_id_t eid,
 				     size_t pathlen);
 
 /* Objstore */
+
+/**
+ * objstore_init: performs the initialisation
+ *
+ * XXX: should probably remove @param bespf
+ *
+ * @param [IN] cfg_items: configuration, managed by init_config
+ * @param [IN] kvsalops: operation vector for kvsal operations
+ * @param [IN] bespf: build extstore path function
+ *
+ * @return: 0 on success, negative value on error.
+ */
 int objstore_init(struct collection_item *cfg_items,
 		  struct kvsal_ops *kvsalops,
 		  build_extstore_path_func *bespf);
+
+/**
+ * objstore_put: puts a file to the object store
+ *
+ * @param [IN] path: path of a POSIX file to be copied to the object store
+ * @param [IN] eid: extstore ID for the object
+ *
+ * @return: 0 on success, negative value on error.
+ */
 int objstore_put(char *path, extstore_id_t *eid);
+
+/**
+ * objstore_get: gets a file from the object store
+ *
+ * @param [IN] path: path of a POSIX file to be read from the object store
+ * @param [IN] eid: extstore ID for the object
+ *
+ * @return: 0 on success, negative value on error.
+ */
 int objstore_get(char *path, extstore_id_t *eid);
+
+/**
+ * objstore_del: deletes an entry in the object store
+ *
+ * @param [IN] eid: extstore ID for the object
+ *
+ * @return: 0 on success, negative value on error.
+ */
 int objstore_del(extstore_id_t *eid);
 
 struct objstore_ops {
