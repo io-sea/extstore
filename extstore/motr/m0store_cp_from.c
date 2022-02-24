@@ -103,16 +103,16 @@ int main(int argc, char *argv[])
 	iolen = atoi(argv[3]);
 	printf("Start: iolen=%u\n", iolen);
 
-        /* hande object id */
-        if (m0_obj_id_sscanf(argv[1], &id) < 0) {
-                fprintf(stderr, "Bad Id\n");
-                exit(1);
-        }
+	/* hande object id */
+	if (m0_obj_id_sscanf(argv[1], &id) < 0) {
+		fprintf(stderr, "Bad Id\n");
+		exit(1);
+	}
 
-        if (!entity_id_is_valid(&id)) {
-                fprintf(stderr, "Entity Id is invalid\n");
-                exit(1);
-        }
+	if (!entity_id_is_valid(&id)) {
+		fprintf(stderr, "Entity Id is invalid\n");
+		exit(1);
+	}
 
 
 	filesize = atoi(argv[4]);

@@ -672,7 +672,7 @@ int extstore_state(extstore_id_t *eid, char *strstate)
 }
 
 int extstore_cp_to(int fd,
-		   extstore_id_t *eid, 
+		   extstore_id_t *eid,
 		   int iolen,
 		   size_t filesize)
 {
@@ -680,7 +680,7 @@ int extstore_cp_to(int fd,
 }
 
 int extstore_cp_from(int fd,
-		     extstore_id_t *eid, 
+		     extstore_id_t *eid,
 		     int iolen,
 		     size_t filesize)
 {

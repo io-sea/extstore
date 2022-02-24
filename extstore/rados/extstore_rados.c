@@ -40,7 +40,7 @@
 
 #define RC_WRAP_LABEL(__rc, __label, __function, ...) ({\
 	__rc = __function(__VA_ARGS__);\
-	if (__rc != 0)        \
+	if (__rc != 0)	\
 		goto __label; })
 
 #define CEPH_CONFIG_DEFAULT "/etc/ceph/ceph.conf"
@@ -373,7 +373,7 @@ int extstore_state(kvsns_ino_t *ino, char *state)
 	return -ENOTSUP;
 }
 int extstore_cp_to(int fd,
-		   kvsns_ino_t *ino, 
+		   kvsns_ino_t *ino,
 		   int iolen,
 		   size_t filesize)
 {
@@ -381,7 +381,7 @@ int extstore_cp_to(int fd,
 }
 
 int extstore_cp_from(int fd,
-		     kvsns_ino_t *ino, 
+		     kvsns_ino_t *ino,
 		     int iolen,
 		     size_t filesize)
 {

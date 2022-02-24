@@ -40,7 +40,7 @@
 
 #define RC_WRAP_LABEL(__rc, __label, __function, ...) ({\
 	__rc = __function(__VA_ARGS__);\
-	if (__rc != 0)        \
+	if (__rc != 0)	\
 		goto __label; })
 
 
@@ -72,7 +72,7 @@ int objstore_put(char *path, extstore_id_t *eid)
 		return -EINVAL;
 
 	RC_WRAP(build_extstore_path, *eid, storepath,
-                MAXPATHLEN - PUT_STR_SIZE);
+		MAXPATHLEN - PUT_STR_SIZE);
 	snprintf(objpath, MAXPATHLEN, "%s%s", storepath, PUT_STR);
 	sprintf(cmd, cmd_put, storepath, objpath);
 

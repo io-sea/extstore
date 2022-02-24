@@ -47,7 +47,7 @@
 
 typedef struct extstore_id {
 	unsigned int len;
-	char         data[DATALEN];
+	char	 data[DATALEN];
 } extstore_id_t;
 
 int extstore_init(struct collection_item *cfg_items,

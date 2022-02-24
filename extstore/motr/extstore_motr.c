@@ -119,17 +119,18 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 }
 
 int extstore_new_objectid(extstore_id_t *eid,
-                          unsigned int seedlen,
-                          char *seed)
+			  unsigned int seedlen,
+			  char *seed)
 {
-        if (!eid || !seed)
-                return -EINVAL;
-	
-	/* Ici il fait hacher une seed en m0128_t de motr qui va dans l'eid */
-        /* Be careful about printf format: string with known length */
-        eid->len = snprintf(eid->data, KLEN, "obj:%.*s", seedlen, seed);
+	if (!eid || !seed)
+		return -EINVAL;
 
-        return 0;
+	/** TODO: hash a seed to a motr m0128_t value and put it into the eid */
+
+	/* Be careful about printf format: string with known length */
+	eid->len = snprintf(eid->data, KLEN, "obj:%.*s", seedlen, seed);
+
+	return 0;
 }
 
 static int eid2motr(extstore_id_t *eid, struct m0_uint128 *id)
@@ -144,12 +145,12 @@ static int eid2motr(extstore_id_t *eid, struct m0_uint128 *id)
 
 	rc = hashlib_murmur3_128("motr", eid->data, hb);
 	if (rc)
-		return -EINVAL; 
+		return -EINVAL;
 
 	memcpy(id, hb, sizeof(struct m0_uint128));
 
 	id->u_lo |= M0_ID_APP.u_lo; /* Preserve reserved ids for the system */
-	id->u_hi |= M0_ID_APP.u_hi; 
+	id->u_hi |= M0_ID_APP.u_hi;
 	fid = (struct m0_fid*)id;
 
 	m0_fid_print(strid, DATALEN, fid);
@@ -174,7 +175,7 @@ int extstore_create(extstore_id_t eid)
 int extstore_attach(extstore_id_t *eid)
 {
 	/* Should handle MD */
-	return 0; 
+	return 0;
 }
 
 int extstore_init(struct collection_item *cfg_items,
@@ -263,7 +264,7 @@ int extstore_write(extstore_id_t *eid,
 	RC_WRAP(m0kvs_get, k, klen, (char *)&motr_stat, &vlen);
 	RC_WRAP(update_stat, &motr_stat, UP_ST_WRITE,
 		offset+written_bytes);
-	
+
 	klen = strnlen(k, KLEN)+1;
 	vlen = sizeof(struct stat);
 	RC_WRAP(m0kvs_set, k, klen, (char *)&motr_stat, vlen);
@@ -319,13 +320,13 @@ int extstore_cp_to(int fd_source,
 		   size_t filesize)
 {
 	struct m0_uint128 id;
-        size_t rsize, wsize;
-        size_t bsize;
-        char *buff;
-        size_t remain;
-        size_t aligned_offset;
-        size_t nb;
-        int rc;
+	size_t rsize, wsize;
+	size_t bsize;
+	char *buff;
+	size_t remain;
+	size_t aligned_offset;
+	size_t nb;
+	int rc;
 
 	if (getenv("NO_BULK") != NULL) {
 		fprintf(stderr, "====> NO BULK !!!\n");
@@ -334,49 +335,44 @@ int extstore_cp_to(int fd_source,
 
 	RC_WRAP(eid2motr, eid, &id);
 
-        bsize = m0store_get_bsize(id);
-        if (bsize < 0)
-                return bsize;
+	bsize = m0store_get_bsize(id);
+	if (bsize < 0)
+		return bsize;
 
-        remain = filesize % bsize;
-        nb = filesize / bsize;
-        aligned_offset = nb * bsize;
+	remain = filesize % bsize;
+	nb = filesize / bsize;
+	aligned_offset = nb * bsize;
 
-        printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
-                filesize, bsize, nb, remain, aligned_offset);
+	printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
+	       filesize, bsize, nb, remain, aligned_offset);
 
-        buff = malloc(bsize);
-        if (buff == NULL)
-                return -ENOMEM;
+	buff = malloc(bsize);
+	if (buff == NULL)
+		return -ENOMEM;
 
-        rc = m0_write_bulk(fd_source,
-                           id,
-                           bsize,
-                           nb,
-                           0,
-                           0);
-        printf("===> rc=%d\n", rc);
+	rc = m0_write_bulk(fd_source, id, bsize, nb, 0, 0);
+	printf("===> rc=%d\n", rc);
 
-        rsize = pread(fd_source, buff, remain, aligned_offset);
-        if (rsize < 0) {
-                        free(buff);
-                        return -1;
-        }
+	rsize = pread(fd_source, buff, remain, aligned_offset);
+	if (rsize < 0) {
+		free(buff);
+		return -1;
+	}
 
-        wsize = m0store_pwrite(id, aligned_offset, rsize, bsize, buff);
-        if (wsize < 0) {
-                free(buff);
-                return -1;
-        }
+	wsize = m0store_pwrite(id, aligned_offset, rsize, bsize, buff);
+	if (wsize < 0) {
+		free(buff);
+		return -1;
+	}
 
-        if (wsize != rsize) {
-                free(buff);
-                return -1;
-        }
+	if (wsize != rsize) {
+		free(buff);
+		return -1;
+	}
 
-        /* Think about setting MD */
-        free(buff);
-        return 0;
+	/* Think about setting MD */
+	free(buff);
+	return 0;
 }
 
 int extstore_cp_from(int fd_dest,
@@ -385,15 +381,15 @@ int extstore_cp_from(int fd_dest,
 		     size_t filesize)
 {
 	struct m0_uint128 id;
-        size_t rsize, wsize;
-        ssize_t bsize;
-        char *buff;
+	size_t rsize, wsize;
+	ssize_t bsize;
+	char *buff;
 
-        size_t remain;
-        size_t aligned_offset;
-        size_t nb;
+	size_t remain;
+	size_t aligned_offset;
+	size_t nb;
 
-        int rc;
+	int rc;
 
 	if (getenv("NO_BULK") != NULL) {
 		fprintf(stderr, "====> NO BULK !!!\n");
@@ -402,51 +398,45 @@ int extstore_cp_from(int fd_dest,
 
 	RC_WRAP(eid2motr, eid, &id);
 
-        bsize = m0store_get_bsize(id);
-        if (bsize < 0) 
-                return bsize;
+	bsize = m0store_get_bsize(id);
+	if (bsize < 0)
+		return bsize;
 
-        remain = filesize % bsize;
-        nb = filesize / bsize;
-        aligned_offset = nb * bsize;
+	remain = filesize % bsize;
+	nb = filesize / bsize;
+	aligned_offset = nb * bsize;
 
-        printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
-                filesize, bsize, nb, remain, aligned_offset);
+	printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
+		filesize, bsize, nb, remain, aligned_offset);
 
-        buff = malloc(bsize);
-        if (buff == NULL)
-                return -ENOMEM;
+	buff = malloc(bsize);
+	if (buff == NULL)
+		return -ENOMEM;
 
-        rc = m0_read_bulk(fd_dest,
-                          id,
-                          bsize,
-                          nb,
-                          0,
-                          0,
-                          0);
-        printf("===> rc=%d\n", rc);
+	rc = m0_read_bulk(fd_dest, id, bsize, nb, 0, 0, 0);
+	printf("===> rc=%d\n", rc);
 
-        rsize = m0store_pread(id, aligned_offset, remain, bsize, buff);
-        if (rsize < 0) {
-                free(buff);
-                return -1;
-        }
+	rsize = m0store_pread(id, aligned_offset, remain, bsize, buff);
+	if (rsize < 0) {
+		free(buff);
+		return -1;
+	}
 
-        wsize = pwrite(fd_dest, buff, rsize, aligned_offset);
-        if (wsize < 0) {
-                free(buff);
-                return -1;
-        }
+	wsize = pwrite(fd_dest, buff, rsize, aligned_offset);
+	if (wsize < 0) {
+		free(buff);
+		return -1;
+	}
 
-        /* This POC writes on aligned blocks, we should align to real size */
-        /* Useful in this case ?? */
-        rc = ftruncate(fd_dest, filesize);
-        if (rc < 0) {
-                free(buff);
-                return -1;
-        }
+	/* This POC writes on aligned blocks, we should align to real size */
+	/* Useful in this case ?? */
+	rc = ftruncate(fd_dest, filesize);
+	if (rc < 0) {
+		free(buff);
+		return -1;
+	}
 
-        free(buff);
-        return 0;
+	free(buff);
+	return 0;
 }
 

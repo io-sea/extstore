@@ -83,7 +83,7 @@ int extstore_create(extstore_id_t eid)
 	return 0;
 }
 
-int extstore_new_objectid(extstore_id_t *eid, 
+int extstore_new_objectid(extstore_id_t *eid,
 			  unsigned int seedlen,
 			  char *seed)
 {
@@ -166,9 +166,8 @@ int extstore_read(extstore_id_t *eid,
 		return rc;
 
 	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC, 0755);
-	if (fd < 0) {
+	if (fd < 0)
 		return -errno;
-	}
 
 	read_bytes = pread(fd, buffer, buffer_size, offset);
 	if (read_bytes < 0) {
@@ -321,7 +320,7 @@ int extstore_state(extstore_id_t *eid, char *state)
 }
 
 int extstore_cp_to(int fd,
-		   extstore_id_t *eid, 
+		   extstore_id_t *eid,
 		   int iolen,
 		   size_t filesize)
 {
@@ -329,7 +328,7 @@ int extstore_cp_to(int fd,
 }
 
 int extstore_cp_from(int fd,
-		     extstore_id_t *eid, 
+		     extstore_id_t *eid,
 		     int iolen,
 		     size_t filesize)
 {

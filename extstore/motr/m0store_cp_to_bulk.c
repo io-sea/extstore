@@ -32,7 +32,7 @@ int copy_to_mero(int fd_source, struct m0_uint128 id,
 		return bsize;
 
 	remain = filesize % bsize;
-	nb = filesize / bsize;	
+	nb = filesize / bsize;
 	aligned_offset = nb * bsize;
 
 	printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
@@ -43,29 +43,29 @@ int copy_to_mero(int fd_source, struct m0_uint128 id,
 		return -ENOMEM;
 
 	rc = m0_write_bulk(fd_source,
-	 		   id,
-			   bsize, 
-			   nb, 
-			   0, 
+			   id,
+			   bsize,
+			   nb,
+			   0,
 			   0);
 	printf("===> rc=%d\n", rc);
 
 	rsize = pread(fd_source, buff, remain, aligned_offset);
 	if (rsize < 0) {
-                        free(buff);
-                        return -1;
-        }
+		free(buff);
+		return -1;
+	}
 
 	wsize = m0store_pwrite(id, aligned_offset, rsize, bsize, buff);
-        if (wsize < 0) {
-                free(buff);
-                return -1;
-        }
+	if (wsize < 0) {
+		free(buff);
+		return -1;
+	}
 
-        if (wsize != rsize) {
-                free(buff);
-                return -1;
-        }
+	if (wsize != rsize) {
+		free(buff);
+		return -1;
+	}
 
 	/* Think about setting MD */
 	free(buff);
