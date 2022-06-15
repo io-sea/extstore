@@ -66,7 +66,7 @@ int objstore_put(char *path, extstore_id_t *eid, char *grh_url)
 	char storepath[MAXPATHLEN - PUT_STR_SIZE];
 	enum grh_request_type type = GRH_PUT;
 	char objpath[MAXPATHLEN];
-	char *backend = "empty";
+	char *backend = "phobos";
 	char cmd[3*MAXPATHLEN];
 	char k[KLEN];
 	FILE *fp;
@@ -100,22 +100,14 @@ int objstore_get(char *path, extstore_id_t *eid, char *grh_url)
 {
 	enum grh_request_type type = GRH_GET;
 	char storepath[MAXPATHLEN];
-	char objpath[MAXPATHLEN];
-	char *backend = "empty";
-	char cmd[3*MAXPATHLEN];
+	char *backend = "phobos";
 	char k[KLEN];
-	FILE *fp;
 
 	if (!eid)
 		return -EINVAL;
 
 	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 	snprintf(k, KLEN, "%s.data_obj", eid->data);
-	RC_WRAP(kvsal.get_char, k, objpath);
-	sprintf(cmd, cmd_get, storepath, objpath);
-
-	fp = popen(cmd, "r");
-	pclose(fp);
 
 	if (grh_url != NULL) {
 		char *storepath_adr = storepath;
@@ -133,7 +125,7 @@ int objstore_del(extstore_id_t *eid, char *grh_url)
 	enum grh_request_type type = GRH_DELETE;
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
-	char *backend = "empty";
+	char *backend = "phobos";
 	char cmd[3*MAXPATHLEN];
 	char k[KLEN];
 	FILE *fp;
