@@ -45,14 +45,9 @@
 		goto __label; })
 
 
-/* The REDIS context exists in the TLS, for MT-Safety */
-#define LEN_CMD (MAXPATHLEN+2*MAXNAMLEN)
+#define URL_LEN 512
 
-static char cmd_put[LEN_CMD];
-static char cmd_get[LEN_CMD];
-static char cmd_del[LEN_CMD];
-
-static char grh_url[LEN_CMD];
+static char grh_url[URL_LEN];
 
 static struct collection_item *conf = NULL;
 struct kvsal_ops kvsal;
@@ -60,99 +55,82 @@ struct objstore_ops objstore;
 
 build_extstore_path_func *build_extstore_path;
 
-#define PUT_STR ".archive"
-#define PUT_STR_SIZE sizeof(PUT_STR)
-
 int objstore_put(char *path, extstore_id_t *eid)
 {
-	char storepath[MAXPATHLEN - PUT_STR_SIZE];
+	struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
 	enum grh_request_type type = GRH_PUT;
-	char objpath[MAXPATHLEN];
 	char *backend = "phobos";
-	char cmd[3*MAXPATHLEN];
+	char *storepath;
 	char k[KLEN];
-	FILE *fp;
 
 	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(build_extstore_path, *eid, storepath,
-		MAXPATHLEN - PUT_STR_SIZE);
-	snprintf(objpath, MAXPATHLEN, "%s%s", storepath, PUT_STR);
-	sprintf(cmd, cmd_put, storepath, objpath);
+	storepath = malloc(MAXPATHLEN);
+	if (!storepath)
+		return -ENOMEM;
 
-	fp = popen(cmd, "r");
-	pclose(fp);
+	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 
 	snprintf(k, KLEN, "%s.data_obj", eid->data);
-	RC_WRAP(kvsal.set_char, k, objpath);
+	RC_WRAP(kvsal.set_char, k, storepath);
 
-	if (grh_url != NULL) {
-		char *storepath_adr = storepath;
-		struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
-		handle_request_wait(grh_url, (const char **)&storepath_adr,
-				    (const char **)&backend, &type, NULL, 1,
-				    &timeout);
-	}
+	RC_WRAP(handle_request_wait, grh_url, (const char **)&storepath,
+				     (const char **)&backend, &type, NULL, 1,
+				     &timeout);
 
 	return 0;
 }
 
 int objstore_get(char *path, extstore_id_t *eid)
 {
+	struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
 	enum grh_request_type type = GRH_GET;
-	char storepath[MAXPATHLEN];
 	char *backend = "phobos";
+	char *storepath;
 	char k[KLEN];
 
 	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
-	snprintf(k, KLEN, "%s.data_obj", eid->data);
+	storepath = malloc(MAXPATHLEN);
+	if (!storepath)
+		return -ENOMEM;
 
-	if (grh_url != NULL) {
-		char *storepath_adr = storepath;
-		struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
-		handle_request_wait(grh_url, (const char **)&storepath_adr,
-				    (const char **)&backend, &type, NULL, 1,
-				    &timeout);
-	}
+	snprintf(k, KLEN, "%s.data_obj", eid->data);
+	RC_WRAP(kvsal.get_char, k, storepath);
+
+	RC_WRAP(handle_request_wait, grh_url, (const char **)&storepath,
+				     (const char **)&backend, &type, NULL, 1,
+				     &timeout);
 
 	return 0;
 }
 
 int objstore_del(extstore_id_t *eid)
 {
+	struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
 	enum grh_request_type type = GRH_DELETE;
-	char storepath[MAXPATHLEN];
-	char objpath[MAXPATHLEN];
 	char *backend = "phobos";
-	char cmd[3*MAXPATHLEN];
+	char *storepath;
 	char k[KLEN];
-	FILE *fp;
 
 	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
+	storepath = malloc(MAXPATHLEN);
+	if (!storepath)
+		return -ENOMEM;
+
 	snprintf(k, KLEN, "%s.data_obj", eid->data);
 
 	if (kvsal.exists(k) != -ENOENT) {
-		RC_WRAP(kvsal.get_char, k, objpath);
-		sprintf(cmd, cmd_del, objpath);
+		RC_WRAP(kvsal.get_char, k, storepath);
+		RC_WRAP(kvsal.del, k);
 
-		fp = popen(cmd, "r");
-		pclose(fp);
-
-	}
-
-	if (grh_url != NULL) {
-		char *storepath_adr = storepath;
-		struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
-		handle_request_wait(grh_url, (const char **)&storepath_adr,
-				    (const char **)&backend, &type, NULL, 1,
-				    &timeout);
+		RC_WRAP(handle_request_wait, grh_url, (const char **)&storepath,
+					     (const char **)&backend, &type,
+					     NULL, 1, &timeout);
 	}
 
 	return 0;
@@ -171,42 +149,14 @@ int objstore_init(struct collection_item *cfg_items,
 
 	memcpy(&kvsal, kvsalops, sizeof(struct kvsal_ops));
 
-	/* Deal with store_root */
 	item = NULL;
-	RC_WRAP(get_config_item, "objstore_cmd", "command_put",
-				 cfg_items, &item);
-	if (item == NULL)
-		return -EINVAL;
-	else
-		strncpy(cmd_put, get_string_config_value(item, NULL),
-			LEN_CMD);
-
-	item = NULL;
-	RC_WRAP(get_config_item, "objstore_cmd", "command_get",
-				 cfg_items, &item);
-	if (item == NULL)
-		return -EINVAL;
-	else
-		strncpy(cmd_get, get_string_config_value(item, NULL),
-			LEN_CMD);
-
-	item = NULL;
-	RC_WRAP(get_config_item, "objstore_cmd", "command_del",
-				 cfg_items, &item);
-	if (item == NULL)
-		return -EINVAL;
-	else
-		strncpy(cmd_del, get_string_config_value(item, NULL),
-			LEN_CMD);
-
-	item = NULL;
-	RC_WRAP(get_config_item, "crud_cache", "grh_url",
+	RC_WRAP(get_config_item, "objstore_grh", "grh_url",
 				 cfg_items, &item);
 	if (item == NULL)
 		return -EINVAL;
 	else
 		strncpy(grh_url, get_string_config_value(item, NULL),
-			LEN_CMD);
+			URL_LEN);
 
 	return 0;
 }
