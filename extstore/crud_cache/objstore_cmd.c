@@ -52,6 +52,8 @@ static char cmd_put[LEN_CMD];
 static char cmd_get[LEN_CMD];
 static char cmd_del[LEN_CMD];
 
+static char grh_url[LEN_CMD];
+
 static struct collection_item *conf = NULL;
 struct kvsal_ops kvsal;
 struct objstore_ops objstore;
@@ -61,7 +63,7 @@ build_extstore_path_func *build_extstore_path;
 #define PUT_STR ".archive"
 #define PUT_STR_SIZE sizeof(PUT_STR)
 
-int objstore_put(char *path, extstore_id_t *eid, char *grh_url)
+int objstore_put(char *path, extstore_id_t *eid)
 {
 	char storepath[MAXPATHLEN - PUT_STR_SIZE];
 	enum grh_request_type type = GRH_PUT;
@@ -96,7 +98,7 @@ int objstore_put(char *path, extstore_id_t *eid, char *grh_url)
 	return 0;
 }
 
-int objstore_get(char *path, extstore_id_t *eid, char *grh_url)
+int objstore_get(char *path, extstore_id_t *eid)
 {
 	enum grh_request_type type = GRH_GET;
 	char storepath[MAXPATHLEN];
@@ -120,7 +122,7 @@ int objstore_get(char *path, extstore_id_t *eid, char *grh_url)
 	return 0;
 }
 
-int objstore_del(extstore_id_t *eid, char *grh_url)
+int objstore_del(extstore_id_t *eid)
 {
 	enum grh_request_type type = GRH_DELETE;
 	char storepath[MAXPATHLEN];
@@ -195,6 +197,15 @@ int objstore_init(struct collection_item *cfg_items,
 		return -EINVAL;
 	else
 		strncpy(cmd_del, get_string_config_value(item, NULL),
+			LEN_CMD);
+
+	item = NULL;
+	RC_WRAP(get_config_item, "crud_cache", "grh_url",
+				 cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+	else
+		strncpy(grh_url, get_string_config_value(item, NULL),
 			LEN_CMD);
 
 	return 0;

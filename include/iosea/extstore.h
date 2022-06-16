@@ -163,40 +163,37 @@ int objstore_init(struct collection_item *cfg_items,
  *
  * @param [IN] path: path of a POSIX file to be copied to the object store
  * @param [IN] eid: extstore ID for the object
- * @param [IN] grh_url: URL of the GRH to send the request to
  *
  * @return: 0 on success, negative value on error.
  */
-int objstore_put(char *path, extstore_id_t *eid, char *grh_url);
+int objstore_put(char *path, extstore_id_t *eid);
 
 /**
  * objstore_get: gets a file from the object store
  *
  * @param [IN] path: path of a POSIX file to be read from the object store
  * @param [IN] eid: extstore ID for the object
- * @param [IN] grh_url: URL of the GRH to send the request to
  *
  * @return: 0 on success, negative value on error.
  */
-int objstore_get(char *path, extstore_id_t *eid, char *grh_url);
+int objstore_get(char *path, extstore_id_t *eid);
 
 /**
  * objstore_del: deletes an entry in the object store
  *
  * @param [IN] eid: extstore ID for the object
- * @param [IN] grh_url: URL of the GRH to send the request to
  *
  * @return: 0 on success, negative value on error.
  */
-int objstore_del(extstore_id_t *eid, char *grh_url);
+int objstore_del(extstore_id_t *eid);
 
 struct objstore_ops {
 	int (*init)(struct collection_item *cfg_items,
 		    struct kvsal_ops *kvsalops,
 		    build_extstore_path_func *bespf);
-	int (*put)(char *path, extstore_id_t *eid, char *grh_url);
-	int (*get)(char *path, extstore_id_t *eid, char *grh_url);
-	int (*del)(extstore_id_t *eid, char *grh_url);
+	int (*put)(char *path, extstore_id_t *eid);
+	int (*get)(char *path, extstore_id_t *eid);
+	int (*del)(extstore_id_t *eid);
 };
 
 /* Ganesha Request Handler communication */
