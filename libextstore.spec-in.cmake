@@ -1,11 +1,11 @@
 %define sourcename @CPACK_SOURCE_PACKAGE_FILE_NAME@
 %global dev_version %{lua: extraver = string.gsub('@LIBEXTSTORE_EXTRA_VERSION@', '%-', '.'); print(extraver) }
 
-Name: libextstore 
+Name: libextstore
 Version: @LIBEXTSTORE_BASE_VERSION@
 Release: 0%{dev_version}%{?dist}
 Summary: Library to access to a namespace inside a KVS
-License: LGPLv3 
+License: LGPLv3
 Group: Development/Libraries
 Url: http://github.com/phdeniel/libextstore
 Source: %{sourcename}.tar.gz
@@ -46,6 +46,8 @@ Summary: The CRUD cache based backend for libextstore
 Group: Applications/System
 Requires: %{name} = %{version}-%{release} librados2
 Provides: %{name}-extstore-crud_cache = %{version}-%{release}
+BuildRequires: libcurl-devel
+Requires: libcurl
 
 %description crud_cache
 This package contains a library for using POSIX as a backed for libextstore
@@ -85,13 +87,13 @@ Provides: %{name}-motr = %{version}-%{release}
 This package contains libraries for using CORTX-MOTR as a backend for libextstore
 %endif
 
-%global debug_package %{nil} 
+%global debug_package %{nil}
 
 %prep
 %setup -q -n %{sourcename}
 
 %build
-cmake . 
+cmake .
 
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
 
@@ -149,4 +151,4 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Wed Nov  3 2021 Philippe DENIEL <philippe.deniel@cea.fr> 1.3.0
-- Better layering between kvsns, kvsal aand extstore. 
+- Better layering between kvsns, kvsal aand extstore.
