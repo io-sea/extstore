@@ -15,6 +15,7 @@
 #define MAX_GRH_REQUEST_PER_REQUEST 100
 
 struct grh_request {
+    char uuid[UUID_LEN];
     char file_id[1024];
     char backend[16];
     enum grh_request_type type;
@@ -65,16 +66,16 @@ void do_request_or_status(struct request_context *request_context,
                           const char *grh_base_url,
                           struct grh_request *requests, size_t count);
 
-void grh_request_setter(const char *path, const char *backend,
+void grh_request_setter(const char *uuid, const char *path, const char *backend,
                         enum grh_request_type type, int error,
                         struct grh_request *request);
 
-int prepare_request_one_entry(char *grh_url, const char *path,
+int prepare_request_one_entry(char *grh_url, const char *uuid, const char *path,
                               const char *backend, enum grh_request_type type,
                               int error, GHashTable *requests);
 
-int prepare_request(char *grh_url, const char * const *paths,
-                    const char * const *backends,
+int prepare_request(char *grh_url, const char * const *uuids,
+                    const char * const *paths, const char * const *backends,
                     enum grh_request_type *types, int *errors,
                     GHashTable *requests, size_t n_paths);
 

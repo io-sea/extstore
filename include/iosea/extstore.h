@@ -44,10 +44,12 @@
 #include <iosea/kvsal.h>
 
 #define DATALEN 256
+#define UUID_LEN 37   // 36 + 1 for the '\0'
 
 typedef struct extstore_id {
 	unsigned int len;
 	char	 data[DATALEN];
+	char     uuid[UUID_LEN];
 } extstore_id_t;
 
 int extstore_init(struct collection_item *cfg_items,
@@ -206,11 +208,11 @@ enum grh_request_type {
 	GRH_LAST = GRH_DELETE,
 };
 
-int handle_request(char *grh_url, const char **paths,
+int handle_request(char *grh_url, const char **uuids, const char **paths,
 		   const char **backends, enum grh_request_type *types,
 		   int *errors, size_t n_paths);
 
-int handle_request_wait(char *grh_url, const char **paths,
+int handle_request_wait(char *grh_url, const char **uuids, const char **paths,
 			const char **backends, enum grh_request_type *types,
 			int *errors, size_t n_paths,
 			const struct timeval *timeout);

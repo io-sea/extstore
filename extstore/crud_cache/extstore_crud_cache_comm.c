@@ -150,7 +150,8 @@ int json_array_append_grh_request(const struct grh_request *request,
     int rc = 0;
 
     /* Build the element json */
-    rq = json_pack("{s: s, s: s, s: s}",
+    rq = json_pack("{s: s, s: s, s: s, s: s}",
+                   "uuid", request->uuid,
                    "file_id", request->file_id,
                    "backend", request->backend,
                    "action", REQUEST_TYPE_TO_STR[request->type]);
@@ -552,6 +553,8 @@ out:
 /**
  * Fill a struct grh_request for one entry
  *
+ * @param[in]       uuid         uuid to identify the objects in the
+ *                               GRH's backend
  * @param[in]       path         path to act on
  * @param[in]       backend      backend to use
  * @param[in]       type         type to perform
@@ -560,11 +563,17 @@ out:
  *
  * @return 0 on success, and -1 * posix error code on failure
  */
-void grh_request_setter(const char *path, const char *backend,
+void grh_request_setter(const char *uuid, const char *path, const char *backend,
                         enum grh_request_type type, int error,
                         struct grh_request *request)
 {
     int rc;
+
+    rc = snprintf(request->uuid, UUID_LEN, "%s", uuid);
+    /* There shouldn't be any error with snprintf */
+    assert(rc >= 0);
+    /* And the buffer's size should always be enough */
+    assert((unsigned int)rc < sizeof(request->uuid));
 
     rc = snprintf(request->file_id, strlen(path) + 1, "%s", path);
     /* There shouldn't be any error with snprintf */
@@ -586,6 +595,8 @@ void grh_request_setter(const char *path, const char *backend,
  * Prepare one request and groupe by GRH URL
  *
  * @param[in]      grh_url      URL of the Ganesha Request Handler
+ * @param[in]      uuid         uuid to identify the objects in the
+ *                              GRH's backend
  * @param[in]      path         path to act on
  * @param[in]      backend      backend to use
  * @param[in]      type         type of the request
@@ -595,7 +606,7 @@ void grh_request_setter(const char *path, const char *backend,
  *
  * @return 0 on success, and -1 * posix error code on failure
  */
-int prepare_request_one_entry(char *grh_url, const char *path,
+int prepare_request_one_entry(char *grh_url, const char *uuid, const char *path,
                               const char *backend, enum grh_request_type type,
                               int error, GHashTable *requests)
 {
@@ -605,7 +616,7 @@ int prepare_request_one_entry(char *grh_url, const char *path,
     int rc = 0;
 
     /* build struct grh_request */
-    grh_request_setter(path, backend, type, error, &request);
+    grh_request_setter(uuid, path, backend, type, error, &request);
 
     /* add request */
     grh.url = grh_url;
@@ -632,6 +643,8 @@ out:
  * Prepare a request and groupe by GRH URL
  *
  * @param[in]       grh_url     URL of the Ganesha Request Handler to use
+ * @param[in]       uuids       array of uuids to identify the objects in the
+ *                              GRH's backends
  * @param[in]       paths       array of paths to act on
  * @param[in]       backends    array of backends to use
  * @param[in]       types       array of request types
@@ -642,9 +655,10 @@ out:
  *
  * @return 0 on success, and -1 * posix error code on failure (first error)
  */
-int prepare_request(char *grh_url, const char * const *paths,
-                    const char * const *backends, enum grh_request_type *types,
-                    int *errors, GHashTable *requests, size_t n_paths)
+int prepare_request(char *grh_url, const char * const *uuids,
+                    const char * const *paths, const char * const *backends,
+                    enum grh_request_type *types, int *errors,
+                    GHashTable *requests, size_t n_paths)
 {
     int rc = 0;
     size_t i;
@@ -653,9 +667,9 @@ int prepare_request(char *grh_url, const char * const *paths,
     for (i = 0; i < n_paths; i++) {
         int rc2;
 
-        rc2 = prepare_request_one_entry(grh_url, paths[i], backends[i],
-                                        types[i], errors ? errors[i] : 0,
-                                        requests);
+        rc2 = prepare_request_one_entry(grh_url, uuids[i], paths[i],
+                                        backends[i], types[i],
+                                        errors ? errors[i] : 0, requests);
         if (errors)
             errors[i] = rc2;
 
@@ -783,7 +797,7 @@ gboolean url_equal(const struct grh *grh1, const struct grh *grh2)
     return strcmp(grh1->url, grh2->url) ? FALSE : TRUE;
 }
 
-int handle_request(char *grh_url, const char **paths,
+int handle_request(char *grh_url, const char **uuids, const char **paths,
                    const char **backends, enum grh_request_type *types,
                    int *errors, size_t n_paths)
 {
@@ -824,7 +838,7 @@ int handle_request(char *grh_url, const char **paths,
                                      (GEqualFunc)url_equal,
                                      (GDestroyNotify)free_grh,
                                      (GDestroyNotify)g_array_unref);
-    request_context.rc = prepare_request(grh_url, paths, backends, types,
+    request_context.rc = prepare_request(grh_url, uuids, paths, backends, types,
                                          errors, requests, n_paths);
     g_hash_table_foreach_remove(requests, (GHRFunc)request_or_status_one_url,
                                 &request_context);
@@ -941,7 +955,7 @@ gboolean status_if_eta_one_url(struct grh *grh, GArray *requests,
     return request_or_status_one_url(grh, requests, request_context);
 }
 
-int handle_request_wait(char *grh_url, const char **paths,
+int handle_request_wait(char *grh_url, const char **uuids, const char **paths,
                         const char **backends, enum grh_request_type *types,
                         int *errors, size_t n_paths,
                         const struct timeval *timeout)
@@ -991,7 +1005,7 @@ int handle_request_wait(char *grh_url, const char **paths,
                                      (GEqualFunc)url_equal,
                                      (GDestroyNotify)free_grh,
                                      (GDestroyNotify)g_array_unref);
-    request_context.rc = prepare_request(grh_url, paths, backends, types,
+    request_context.rc = prepare_request(grh_url, uuids, paths, backends, types,
                                          errors, requests, n_paths);
 
     /* request request */

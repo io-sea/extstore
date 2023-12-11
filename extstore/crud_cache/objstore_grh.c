@@ -59,7 +59,8 @@ int objstore_put(char *path, extstore_id_t *eid)
 {
 	struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
 	enum grh_request_type type = GRH_PUT;
-	char *backend = "phobos";
+	char *backend = "hestia";
+	char *uuid = eid->uuid;
 	char *storepath;
 	char k[KLEN];
 
@@ -75,7 +76,8 @@ int objstore_put(char *path, extstore_id_t *eid)
 	snprintf(k, KLEN, "%s.data_obj", eid->data);
 	RC_WRAP(kvsal.set_char, k, storepath);
 
-	RC_WRAP(handle_request_wait, grh_url, (const char **)&storepath,
+	RC_WRAP(handle_request_wait, grh_url, (const char **)&uuid,
+				     (const char **)&storepath,
 				     (const char **)&backend, &type, NULL, 1,
 				     &timeout);
 
@@ -86,7 +88,8 @@ int objstore_get(char *path, extstore_id_t *eid)
 {
 	struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
 	enum grh_request_type type = GRH_GET;
-	char *backend = "phobos";
+	char *backend = "hestia";
+	char *uuid = eid->uuid;
 	char *storepath;
 	char k[KLEN];
 
@@ -100,7 +103,8 @@ int objstore_get(char *path, extstore_id_t *eid)
 	snprintf(k, KLEN, "%s.data_obj", eid->data);
 	RC_WRAP(kvsal.get_char, k, storepath);
 
-	RC_WRAP(handle_request_wait, grh_url, (const char **)&storepath,
+	RC_WRAP(handle_request_wait, grh_url, (const char **)&uuid,
+				     (const char **)&storepath,
 				     (const char **)&backend, &type, NULL, 1,
 				     &timeout);
 
@@ -111,7 +115,8 @@ int objstore_del(extstore_id_t *eid)
 {
 	struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 };
 	enum grh_request_type type = GRH_DELETE;
-	char *backend = "phobos";
+	char *backend = "hestia";
+	char *uuid = eid->uuid;
 	char *storepath;
 	char k[KLEN];
 
@@ -128,7 +133,8 @@ int objstore_del(extstore_id_t *eid)
 		RC_WRAP(kvsal.get_char, k, storepath);
 		RC_WRAP(kvsal.del, k);
 
-		RC_WRAP(handle_request_wait, grh_url, (const char **)&storepath,
+		RC_WRAP(handle_request_wait, grh_url, (const char **)&uuid,
+					     (const char **)&storepath,
 					     (const char **)&backend, &type,
 					     NULL, 1, &timeout);
 	}
